@@ -1,0 +1,69 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: memory-drive
+  namespace: memory-drive
+  labels:
+    app.kubernetes.io/name: memory-drive
+  annotations:
+    # Allow uploads up to the app's max (plus headroom) through the proxy.
+    nginx.ingress.kubernetes.io/proxy-body-size: "16m"
+spec:
+  # Assumes the NGINX Ingress Controller is installed. For an AWS ALB instead,
+  # set this to "alb" and add the alb.ingress.kubernetes.io/* annotations.
+  ingressClassName: nginx
+  rules:
+    - host: memory-drive.local   # change to your DNS name (or use the LB address)
+      http:
+        paths:
+          # --- API + operational endpoints route to the backend ---
+          - path: /upload
+            pathType: Prefix
+            backend:
+              service:
+                name: memory-drive-backend
+                port:
+                  number: 8080
+          - path: /files
+            pathType: Prefix
+            backend:
+              service:
+                name: memory-drive-backend
+                port:
+                  number: 8080
+          - path: /simulate
+            pathType: Prefix
+            backend:
+              service:
+                name: memory-drive-backend
+                port:
+                  number: 8080
+          - path: /stats
+            pathType: Prefix
+            backend:
+              service:
+                name: memory-drive-backend
+                port:
+                  number: 8080
+          - path: /health
+            pathType: Prefix
+            backend:
+              service:
+                name: memory-drive-backend
+                port:
+                  number: 8080
+          - path: /metrics
+            pathType: Prefix
+            backend:
+              service:
+                name: memory-drive-backend
+                port:
+                  number: 8080
+          # --- Everything else is the frontend SPA ---
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: memory-drive-frontend
+                port:
+                  number: 80

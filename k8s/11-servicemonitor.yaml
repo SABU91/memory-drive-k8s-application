@@ -1,0 +1,26 @@
+# OPTIONAL — requires the Prometheus Operator (installed by kube-prometheus-stack).
+# Apply this only after that stack is installed, otherwise the ServiceMonitor
+# CRD will not exist and `kubectl apply` will fail. Alternatively rely on the
+# prometheus.io/scrape annotations already set on the backend Service/Pod.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: memory-drive-backend
+  namespace: memory-drive
+  labels:
+    app.kubernetes.io/name: memory-drive
+    # kube-prometheus-stack's default serviceMonitorSelector matches this label.
+    # Change the value if your Helm release name differs.
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - memory-drive
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: memory-drive
+      app.kubernetes.io/component: backend
+  endpoints:
+    - port: http          # matches the named port on the backend Service
+      path: /metrics
+      interval: 15s

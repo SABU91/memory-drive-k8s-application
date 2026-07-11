@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: memory-drive-backend
+  namespace: memory-drive
+  labels:
+    app.kubernetes.io/name: memory-drive
+    app.kubernetes.io/component: backend
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: memory-drive
+    app.kubernetes.io/component: backend
+  ports:
+    - name: http          # named so a ServiceMonitor can target it by name
+      port: 8080
+      targetPort: http

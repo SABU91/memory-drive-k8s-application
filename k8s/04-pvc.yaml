@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: memory-drive-data
+  namespace: memory-drive
+  labels:
+    app.kubernetes.io/name: memory-drive
+spec:
+  # ReadWriteOnce: the volume attaches to a single node. Because SQLite is a
+  # single-file, single-host database, the backend Pods that mount this claim
+  # are scheduled onto that same node and share the file safely via SQLite's
+  # WAL locking. See docs/DEPLOYMENT.md for the scaling caveat.
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  # storageClassName is intentionally omitted so the cluster's default class is
+  # used. On EKS this is typically the EBS CSI "gp2"/"gp3" class. To use a true
+  # node-local volume instead, create a local PV + StorageClass and set its
+  # name here (e.g. storageClassName: local-path).

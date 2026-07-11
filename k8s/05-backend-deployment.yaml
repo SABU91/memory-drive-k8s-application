@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memory-drive-backend
+  namespace: memory-drive
+  labels:
+    app.kubernetes.io/name: memory-drive
+    app.kubernetes.io/component: backend
+spec:
+  replicas: 1
+  # Recreate avoids two Pods holding the ReadWriteOnce volume during rollouts.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: memory-drive
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: memory-drive
+        app.kubernetes.io/component: backend
+      annotations:
+        # Annotation-based scraping (works with a Prometheus configured for it).
+        # kube-prometheus-stack users can instead apply 09-servicemonitor.yaml.
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: memory-drive
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532          # makes the mounted volume group-writable
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: backend
+          image: memory-drive-backend:latest   # replace with your registry/tag
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: memory-drive-config
+            - secretRef:
+                name: memory-drive-secret
+          # Resource requests/limits sized for t2.micro (1 vCPU / 1 GiB) nodes.
+          # Keep CACHE_SIZE_MB + BASELINE_MEMORY_MB comfortably below the memory
+          # limit so the workload generator raises usage without OOM-killing.
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          # Startup probe: give the process time to open the DB and warm the
+          # cache before liveness/readiness begin.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 3
+            failureThreshold: 20   # up to ~60s to become healthy
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 15
+            timeoutSeconds: 2
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: memory-drive-data
+        - name: tmp
+          emptyDir: {}

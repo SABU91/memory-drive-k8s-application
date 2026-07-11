@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: memory-drive
+  labels:
+    app.kubernetes.io/name: memory-drive
+    # Let kube-prometheus-stack discover resources in this namespace.
+    monitoring: "true"
