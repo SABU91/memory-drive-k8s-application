@@ -1,0 +1,59 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  AWS_REGION: eu-north-1
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    permissions: 
+      contents: read
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{secrets.AWS_ACCESS_KEY_ID}}
+        aws-secret-access-key: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+        aws-region: ${{env.AWS_REGION}}
+        
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+    
+
+    - name: Build the Backend Docker image
+      run: |
+        docker build \
+          -f Dockerfile.backend \
+          -t ${{ steps.login-ecr.outputs.registry }}/learning/memory-drive-k8s-application:${{ github.sha }} \
+          .
+    
+    - name: Push the Backend Docker image
+      run: |
+        docker push \
+        ${{ steps.login-ecr.outputs.registry }}/learning/memory-drive-k8s-application:${{ github.sha }}
+
+
+    - name: Build the Frontend Docker image
+      run: |
+        docker build \
+          -f Dockerfile.frontend \
+          -t ${{ steps.login-ecr.outputs.registry }}/learning/memory-drive-frontend:${{ github.sha }} \
+          .
+    
+    - name: Push the Frontend Docker image
+      run: |
+        docker push \
+          ${{ steps.login-ecr.outputs.registry }}/learning/memory-drive-frontend:${{ github.sha }}
+      
