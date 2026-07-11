@@ -46,24 +46,24 @@ jobs:
     - name: Push the Backend Docker image
       run: |
         docker push \
-        ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }}
+        ${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_REPOSITORY }}:${{ github.sha }}
 
 
     - name: Build the Frontend Docker image
       run: |
         docker build \
           -f Dockerfile.frontend \
-          -t ${{ steps.login-ecr.outputs.registry }}/learning/memory-drive-frontend:${{ github.sha }} \
+          -t ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }} \
           .
     
     - name: Push the Frontend Docker image
       run: |
         docker push \
-          ${{ steps.login-ecr.outputs.registry }}/learning/memory-drive-frontend:${{ github.sha }}
+          ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }}
       
     - name: Install yq
       run: |
-        sudo wget -q0 /usr/local/bin/yq \
+        sudo wget -qO /usr/local/bin/yq \
           https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
 
         sudo chmod +x /usr/local/bin/yq
@@ -98,4 +98,4 @@ jobs:
         fi
 
         git commit -m "Update image tags to ${{ github.sha }}"
-        git push
+        git push origin HEAD:main
