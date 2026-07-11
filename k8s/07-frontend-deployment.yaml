@@ -26,12 +26,12 @@ spec:
       serviceAccountName: memory-drive
       securityContext:
         runAsNonRoot: true
-        runAsUser: 101          # nginx user in the unprivileged image
+        runAsUser: 101 # nginx user in the unprivileged image
         seccompProfile:
           type: RuntimeDefault
       containers:
         - name: frontend
-          image: memory-drive-frontend:latest   # replace with your registry/tag
+          image: 077582400920.dkr.ecr.eu-north-1.amazonaws.com/learning/memory-drive-frontend:2610cb3b09bed1c2fce177ce62f5aeaf47214a7d # replace with your registry/tag
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

@@ -32,12 +32,12 @@ spec:
         runAsNonRoot: true
         runAsUser: 65532
         runAsGroup: 65532
-        fsGroup: 65532          # makes the mounted volume group-writable
+        fsGroup: 65532 # makes the mounted volume group-writable
         seccompProfile:
           type: RuntimeDefault
       containers:
         - name: backend
-          image: memory-drive-backend:latest   # replace with your registry/tag
+          image: 077582400920.dkr.ecr.eu-north-1.amazonaws.com/learning/memory-drive-k8s-application:2610cb3b09bed1c2fce177ce62f5aeaf47214a7d # replace with your registry/tag
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -64,7 +64,7 @@ spec:
               path: /health
               port: http
             periodSeconds: 3
-            failureThreshold: 20   # up to ~60s to become healthy
+            failureThreshold: 20 # up to ~60s to become healthy
           readinessProbe:
             httpGet:
               path: /health
