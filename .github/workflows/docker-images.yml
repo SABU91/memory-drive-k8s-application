@@ -2,11 +2,15 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
+    paths-ignore:
+      - 'k8s/**'
 
 env:
   AWS_REGION: eu-north-1
-
+  BACKEND_REPOSITORY: learning/memory-drive-k8s-application 
+  FRONTEND_REPOSITORY: learning/memory-drive-frontend
 jobs:
 
   build:
@@ -14,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions: 
-      contents: read
+      contents: write
 
     steps:
     - name: Checkout Repository
@@ -36,13 +40,13 @@ jobs:
       run: |
         docker build \
           -f Dockerfile.backend \
-          -t ${{ steps.login-ecr.outputs.registry }}/learning/memory-drive-k8s-application:${{ github.sha }} \
+          -t ${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_REPOSITORY }}:${{ github.sha }} \
           .
     
     - name: Push the Backend Docker image
       run: |
         docker push \
-        ${{ steps.login-ecr.outputs.registry }}/learning/memory-drive-k8s-application:${{ github.sha }}
+        ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }}
 
 
     - name: Build the Frontend Docker image
@@ -57,3 +61,41 @@ jobs:
         docker push \
           ${{ steps.login-ecr.outputs.registry }}/learning/memory-drive-frontend:${{ github.sha }}
       
+    - name: Install yq
+      run: |
+        sudo wget -q0 /usr/local/bin/yq \
+          https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+
+        sudo chmod +x /usr/local/bin/yq
+
+        yq --version
+
+    - name: Update Backend Deployment
+      run: |
+        yq -i '
+        .spec.template.spec.containers[0].image =
+        "${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_REPOSITORY }}:${{ github.sha }}" 
+        ' k8s/05-backend-deployment.yaml
+        
+    - name: Update Frontend Deployment
+      run: |
+        yq -i '
+        .spec.template.spec.containers[0].image =
+        "${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }}" 
+        ' k8s/07-frontend-deployment.yaml
+    - name: Configure Git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+    - name: Commit updated manifests
+      run: |
+        git add k8s/
+
+        if git diff --cached --quiet; then
+          echo "No manifest changes"
+          exit 0
+        fi
+
+        git commit -m "Update image tags to ${{ github.sha }}"
+        git push
